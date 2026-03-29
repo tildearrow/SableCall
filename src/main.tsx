@@ -11,6 +11,57 @@ Please see LICENSE in the repository root for full details.
 // dependency references.
 import "matrix-js-sdk/lib/browser-index";
 
+// the following code is taken from Vesktop, with some modifications.
+/*
+ * Vesktop, a desktop app aiming to give you a snappier Discord Experience
+ * Copyright (c) 2023 Vendicated and Vencord contributors
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ *
+ * adapted for Sable on browser
+ */
+
+const originalDM = navigator.mediaDevices.getDisplayMedia;
+var screenShareDeviceName = "vencord-screen-share";
+
+async function getVirtmic() {
+    try {
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        // change this string to select a different device or window.
+        const audioDevice = devices.find(({ label }) => label === screenShareDeviceName);
+        return audioDevice?.deviceId;
+    } catch (error) {
+        return null;
+    }
+}
+
+navigator.mediaDevices.getDisplayMedia = async function (opts) {
+    console.log("called getDisplayMedia!!!!");
+    const stream = await originalDM.call(this, opts);
+    const id = await getVirtmic();
+
+    if (id) {
+        console.log("binding audio...");
+        const audio = await navigator.mediaDevices.getUserMedia({
+            audio: {
+                deviceId: {
+                    exact: id
+                },
+                autoGainControl: false,
+                echoCancellation: false,
+                noiseSuppression: false,
+                channelCount: 2,
+                sampleRate: 48000,
+                sampleSize: 16
+            }
+        });
+
+        stream.getAudioTracks().forEach(t => stream.removeTrack(t));
+        stream.addTrack(audio.getAudioTracks()[0]);
+    }
+
+    return stream;
+};
+
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import "./index.css";

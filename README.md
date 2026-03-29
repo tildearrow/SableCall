@@ -1,3 +1,17 @@
+# MODIFIED
+
+modified to add some basic manual screen share audio support on Linux.
+
+works on my machine...
+
+# Build Instructions
+
+corepack enable
+yarn
+yarn run build:embedded:production
+
+then copy the files in dist/ to Sable/sable-call-modified/dist/
+
 # Element Call
 
 [![Chat](https://img.shields.io/matrix/webrtc:matrix.org)](https://matrix.to/#/#webrtc:matrix.org)
