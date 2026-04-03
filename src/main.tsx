@@ -37,26 +37,47 @@ async function getVirtmic() {
 navigator.mediaDevices.getDisplayMedia = async function (opts) {
     console.log("called getDisplayMedia!!!!");
     const stream = await originalDM.call(this, opts);
-    const id = await getVirtmic();
 
-    if (id) {
-        console.log("binding audio...");
-        const audio = await navigator.mediaDevices.getUserMedia({
-            audio: {
-                deviceId: {
-                    exact: id
-                },
-                autoGainControl: false,
-                echoCancellation: false,
-                noiseSuppression: false,
-                channelCount: 2,
-                sampleRate: 48000,
-                sampleSize: 16
-            }
-        });
+    if (navigator.platform.startsWith("Linux")) {
+        console.log("Linux Workaround.");
+        const id = await getVirtmic();
 
-        stream.getAudioTracks().forEach(t => stream.removeTrack(t));
-        stream.addTrack(audio.getAudioTracks()[0]);
+        if (id) {
+            console.log("binding audio...");
+            const audio = await navigator.mediaDevices.getUserMedia({
+                audio: {
+                    deviceId: {
+                        exact: id
+                    },
+                    autoGainControl: false,
+                    echoCancellation: false,
+                    noiseSuppression: false,
+                    channelCount: 2,
+                    sampleRate: 48000,
+                    sampleSize: 16
+                }
+            });
+
+            stream.getAudioTracks().forEach(t => stream.removeTrack(t));
+            stream.addTrack(audio.getAudioTracks()[0]);
+        }
+    } else {
+      console.log("Windows/macOS/Other Workaround.");
+      stream.getAudioTracks().forEach(t => {
+        const constraints = {
+            ...t.getConstraints(),
+            autoGainControl: false,
+            echoCancellation: false,
+            noiseSuppression: false,
+            channelCount: { min: 1, ideal: 2, max: 2 },
+        };
+
+        t.applyConstraints(constraints)
+          .then(() => {
+            console.log("new constraints: ", track.getConstraints());
+          })
+          .catch(e => console.log("failed to apply constraints!", e));
+      });
     }
 
     return stream;
